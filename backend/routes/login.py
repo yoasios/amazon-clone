@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from ..schemas.signin_input import signin_input
-from ..schemas.login_input import login_input
+from ..schemas.signin_input import SigninInput
+from ..schemas.login_input import LoginInput
 from ..services.database import get_db
 from ..models.users_class import User
 from ..models.shop_data import Shop
@@ -14,7 +14,7 @@ from fastapi import Response
 router = APIRouter()
 
 @router.post("/login")
-async def login(response: Response, new: login_input, db: AsyncSession = Depends(get_db)):
+async def login(response: Response, new: LoginInput, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).filter(User.email == new.email))
     same_user = result.scalar_one_or_none()
     if not same_user:
@@ -24,23 +24,27 @@ async def login(response: Response, new: login_input, db: AsyncSession = Depends
     token = create_access_token(data={"id": same_user.id, "email": same_user.email})
     access_token_cookie(response, token)
     
+    # Get all shops for this user
     shop_result = await db.execute(select(Shop).filter(Shop.user_id == same_user.id))
-    user_shop = shop_result.scalar_one_or_none()
+    user_shops = shop_result.scalars().all()
     
-    if user_shop:
-        return {
-            "message": "Logged in successfully",
-            "token": token,
-            "shop": {
-                "shop_id": user_shop.shop_id,
-                "shop_name": user_shop.shop_name,
-                "shop_description": user_shop.shop_description,
-                "shop_address": user_shop.shop_address,
-                "shop_phone": user_shop.shop_phone,
-                "shop_email": user_shop.shop_email
-            }
+    shops_data = [
+        {
+            "shop_id": shop.shop_id,
+            "shop_name": shop.shop_name,
+            "shop_description": shop.shop_description,
+            "shop_address": shop.shop_address,
+            "shop_phone": shop.shop_phone,
+            "shop_email": shop.shop_email
         }
-    else:
-        return {"message": "Logged in successfully", "token": token}
+        for shop in user_shops
+    ]
+    
+    return {
+        "message": "Logged in successfully",
+        "token": token,
+        "shops": shops_data,
+        "shop_count": len(shops_data)
+    }
 
    

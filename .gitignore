@@ -32,3 +32,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Seed data script
+seed_data.py
