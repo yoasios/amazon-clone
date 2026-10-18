@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from ..schemas.signin_input import signin_input
+from ..schemas.signin_input import SigninInput
 from ..services.database import get_db
 from ..models.users_class import User
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,7 @@ from fastapi import Response
 router = APIRouter()
 
 @router.post("/signin")
-async def signin(response: Response, new: signin_input, db: AsyncSession = Depends(get_db)):
+async def signin(response: Response, new: SigninInput, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).filter(User.email == new.email))
     same_user = result.scalar_one_or_none()
     if same_user:
