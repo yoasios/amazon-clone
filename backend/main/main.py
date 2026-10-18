@@ -8,6 +8,7 @@ from ..models.users_class import User
 from ..models.cart_class import Cart
 from ..models.products import Product
 from ..models.shop_data import Shop
+from ..routes.products import router as products_router
 
 app = FastAPI()
 
@@ -20,3 +21,4 @@ app.include_router(health_router)
 app.include_router(login_router)
 app.include_router(signin_router)
 app.include_router(shop_router)
+app.include_router(products_router)

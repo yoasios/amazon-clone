@@ -191,6 +191,37 @@ Once the server is running, visit:
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 
+## Testing
+
+The project includes comprehensive pytest tests for all endpoints.
+
+**Install test dependencies:**
+```bash
+pip install pytest pytest-asyncio httpx
+```
+
+**Run all tests:**
+```bash
+pytest tests/ -v
+```
+
+**Run specific test:**
+```bash
+pytest tests/test_main.py::test_health_check -v
+```
+
+**Test coverage includes:**
+- Health check endpoint
+- User registration (signin)
+- User login with valid/invalid credentials
+- Shop creation with authentication
+- Duplicate shop prevention
+- Product creation with shop token
+- Duplicate product prevention
+- Complete user flow (signin → shop_login → add_product)
+
+Tests use an in-memory SQLite database and do not affect your main database.
+
 ## Security
 
 - Passwords are hashed using Bcrypt

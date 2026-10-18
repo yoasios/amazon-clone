@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from ..schemas.signin_input import signin_input
+from ..schemas.login_input import login_input
 from ..services.database import get_db
 from ..models.users_class import User
 from ..models.shop_data import Shop
@@ -13,7 +14,7 @@ from fastapi import Response
 router = APIRouter()
 
 @router.post("/login")
-async def login(response: Response, new: signin_input, db: AsyncSession = Depends(get_db)):
+async def login(response: Response, new: login_input, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).filter(User.email == new.email))
     same_user = result.scalar_one_or_none()
     if not same_user:
@@ -31,6 +32,7 @@ async def login(response: Response, new: signin_input, db: AsyncSession = Depend
             "message": "Logged in successfully",
             "token": token,
             "shop": {
+                "shop_id": user_shop.shop_id,
                 "shop_name": user_shop.shop_name,
                 "shop_description": user_shop.shop_description,
                 "shop_address": user_shop.shop_address,
