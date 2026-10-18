@@ -79,15 +79,7 @@ backend/
    pip install fastapi uvicorn sqlalchemy[asyncio] aiosqlite passlib[bcrypt] pyjwt python-dotenv
    ```
 
-4. **Configure environment variables**
-   Create a `.env` file in the root directory:
-   ```
-   ALGORITHM = "HS256"
-   SECRET_KEY = "your-secret-key-minimum-32-characters"
-   DATABASE_URL = "sqlite:///./test.db"
-   scheme = "bcrypt"
-   paas_for_cookies = "your-cookie-secret"
-   ```
+
 
 5. **Run the server**
    ```bash
