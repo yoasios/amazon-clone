@@ -11,6 +11,7 @@ class Cart(Base):
     cart_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     product_id = Column(Integer, ForeignKey("product.product_id"), index=True)
+    order_id = Column(Integer, ForeignKey("orders.order_id"), index=True)  # Links cart to order
     quantity = Column(Integer)
     total_price = Column(Integer)
     timestamp = Column(DateTime(timezone=True))
