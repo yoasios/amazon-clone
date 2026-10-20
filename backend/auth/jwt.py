@@ -37,7 +37,7 @@ def access_token_cookie(response: Response, token: str):
 
 def get_current_user(access_token: str = Cookie(None)):
     if not access_token:
-        raise HTTPException(status_code=401, detail="No access token found")
+        return None
     try:
         token_data = decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         sub = token_data.get("sub")
@@ -45,6 +45,9 @@ def get_current_user(access_token: str = Cookie(None)):
             return json.loads(sub)
         return None
     except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+        return None
     except InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        return None
+    except Exception as e:
+        print(f"Token decode error: {e}")
+        return None
