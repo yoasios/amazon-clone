@@ -17,6 +17,8 @@ from ..routes.switch_shop import router as switch_shop_router
 from ..routes.buy_product import router as buy_product_router
 from ..routes.order_status import router as order_status_router
 from ..routes.order_history import router as order_history_router
+from ..routes.product_change import router as product_change_router
+from ..routes.ProductStock import router as product_stock_router
 
 app = FastAPI()
 
@@ -37,3 +39,5 @@ app.include_router(switch_shop_router)
 app.include_router(buy_product_router)
 app.include_router(order_status_router)
 app.include_router(order_history_router)
+app.include_router(product_change_router)
+app.include_router(product_stock_router)

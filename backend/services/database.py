@@ -4,12 +4,13 @@ from .config import DATABASE_URL
 
 # Check if using SQLite or PostgreSQL
 if DATABASE_URL.startswith("sqlite"):
-    # Convert sqlite:// to sqlite+aiosqlite:// for async support
-    async_database_url = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://")
-    engine = create_async_engine(async_database_url)
+    # SQLite with aiosqlite driver
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///./test.db",
+        echo=False
+    )
 else:
     # PostgreSQL - add connection pooling
-    
     engine = create_async_engine(
         DATABASE_URL,
         pool_size=10,

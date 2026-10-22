@@ -3,6 +3,7 @@ from ..services.database import get_db
 from ..models.products import Products
 from ..models.cart_class import Cart
 from ..models.orders import Order
+from ..models.users_class import User
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from fastapi import Depends, Response
@@ -36,7 +37,7 @@ async def buy_product(
                 .where(Products.product_id == item.product_id)
                 .where(Products.amount >= item.quantity)
                 .values(amount=Products.amount - item.quantity)
-                .returning(Products.product_name, Products.product_price, Products.shop_id)
+                .returning(Products.product_name, Products.product_price, Products.product_description, Products.shop_id)
             )
             
             product_data = result.fetchone()
@@ -56,11 +57,12 @@ async def buy_product(
                         detail=f"Not enough stock for product {product.product_name}. Available: {product.amount}, Requested: {item.quantity}"
                     )
             
-            product_name, product_price, shop_id = product_data
+            product_name, product_price, product_description, shop_id = product_data
             
             purchased_items.append({
                 "product_id": item.product_id,
                 "product_name": product_name,
+                "product_description": product_description,
                 "quantity": item.quantity,
                 "price": product_price,
                 "total": item.quantity * product_price
@@ -88,13 +90,17 @@ async def buy_product(
                 order_id=order.order_id,
                 quantity=item.quantity,
                 total_price=item.quantity * purchased_items[i]["price"],
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
+                # Snapshot: store product details at time of purchase
+                product_name_snapshot=purchased_items[i]["product_name"],
+                product_price_snapshot=purchased_items[i]["price"],
+                product_description_snapshot=""  # Can add if description is retrieved
             )
             db.add(cart_item)
         
         # Commit all changes
         await db.commit()
-        
+
         return {
             "success": True,
             "message": "Purchase successful",

@@ -18,7 +18,13 @@ async def signin(response: Response, new: SigninInput, db: AsyncSession = Depend
     if same_user:
         raise HTTPException(status_code=400, detail="User already exists pls login")
     hash_password = pwd_context.hash(new.password[:72])
-    adds = User(name=new.name, email=new.email, password=hash_password)
+    adds = User(
+        name=new.name,
+        email=new.email,
+        password=hash_password,
+        phone=new.phone,
+        address=new.address
+    )
     try:
         db.add(adds)
         await db.commit()
