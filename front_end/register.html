@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Create account</title><link rel="stylesheet" href="css/style.css"></head>
+<body><header id="site-header"></header>
+<main class="auth"><h1>Create your account</h1>
+<form id="register-form" novalidate>
+<label for="name">Full name</label><input id="name" name="name" autocomplete="name" required>
+<label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required>
+<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" maxlength="72" required>
+<label for="phone">Phone (10 digits recommended)</label><input id="phone" name="phone" type="tel" autocomplete="tel" required>
+<label for="address">Delivery address</label><textarea id="address" name="address" rows="2" autocomplete="street-address" required></textarea>
+<p class="form-error" role="alert"></p>
+<button class="btn" type="submit">Create account</button>
+</form>
+<p class="hint">Already registered? <a href="login.html">Sign in</a>.</p></main>
+<script src="js/config.js"></script><script src="js/utils.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/cart.js"></script>
+<script>renderHeader();</script></body></html>

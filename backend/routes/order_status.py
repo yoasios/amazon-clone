@@ -48,15 +48,17 @@ async def get_order_status(
             "product_id": product.product_id,
             "product_name": product.product_name,
             "quantity": cart.quantity,
-            "price": product.product_price,
+            "price": cart.product_price_snapshot,  # Use snapshot price
             "total": cart.total_price
         })
-    
+
     return {
         "order_id": order.order_id,
+        "shop_id": order.shop_id,
         "status": order.status,
         "total_cost": order.total_cost,
         "created_at": order.created_at,
+        "status_updated_at": order.status_updated_at,
         "items": items,
         "item_count": len(items)
     }

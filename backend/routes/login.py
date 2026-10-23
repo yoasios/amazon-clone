@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import Depends, HTTPException
 from ..auth.passlib_setup import pwd_context
-from ..auth.jwt import create_access_token, access_token_cookie, get_current_user
+from ..auth.jwt import create_access_token, access_token_cookie, get_current_user_optional
 from fastapi import Response
 
 router = APIRouter()
@@ -18,7 +18,7 @@ async def login(
     response: Response,
     new: LoginInput,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional)
 ):
     # If user is already logged in (has valid cookie), return their data directly
     if current_user:
