@@ -65,18 +65,25 @@ async def buy_product(
                 "product_description": product_description,
                 "quantity": item.quantity,
                 "price": product_price,
-                "total": item.quantity * product_price
+                "total": item.quantity * product_price,
+                "shop_id": shop_id
             })
             shop_ids.append(shop_id)
             
             total_cost += item.quantity * product_price
         
         # All items validated and stock deducted successfully
+        # Verify all items are from the same shop
+        unique_shop_ids = set(shop_ids)
+        if len(unique_shop_ids) > 1:
+            raise HTTPException(status_code=400, detail="All items must be from the same shop")
+
         # Now create order and cart items
         order = Order(
             user_id=user_id,
+            shop_id=shop_ids[0],  # All items from same shop
             total_cost=total_cost,
-            status="completed"
+            status="pending"  # Changed from completed to pending
         )
         db.add(order)
         await db.flush()  # Get order_id
@@ -94,7 +101,7 @@ async def buy_product(
                 # Snapshot: store product details at time of purchase
                 product_name_snapshot=purchased_items[i]["product_name"],
                 product_price_snapshot=purchased_items[i]["price"],
-                product_description_snapshot=""  # Can add if description is retrieved
+                product_description_snapshot=purchased_items[i]["product_description"]
             )
             db.add(cart_item)
         

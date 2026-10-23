@@ -15,7 +15,8 @@ def shop_access_token_cookie(response: Response, token: str):
         value=token,
         httponly=True,
         secure=False,
-        samesite="lax"
+        samesite="lax",
+        path="/"
     )
 
 def get_current_shop(shop_access_token: str = Cookie(None)):

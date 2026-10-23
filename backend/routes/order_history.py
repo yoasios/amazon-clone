@@ -58,9 +58,11 @@ async def get_order_history(
         
         orders_with_items.append({
             "order_id": order.order_id,
+            "shop_id": order.shop_id,
             "status": order.status,
             "total_cost": order.total_cost,
             "created_at": order.created_at,
+            "status_updated_at": order.status_updated_at,
             "items": items,
             "item_count": len(items)
         })

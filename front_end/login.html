@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in</title><link rel="stylesheet" href="css/style.css"></head>
+<body><header id="site-header"></header>
+<main class="auth"><h1>Sign in</h1>
+<form id="login-form" novalidate>
+<label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required>
+<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+<p class="form-error" role="alert"></p>
+<button class="btn" type="submit">Sign in</button>
+</form>
+<p class="hint">New here? <a href="register.html">Create an account</a>. Sessions last 60 minutes.</p></main>
+<script src="js/config.js"></script><script src="js/utils.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/cart.js"></script>
+<script>renderHeader();</script></body></html>
