@@ -2,8 +2,7 @@
 
 Complete API reference for all endpoints including request/response formats, authentication requirements, and detailed explanations.
 
-**Author:** yoasios  
-**Email:** vangoyt867@gmail.com
+**Author:** yoasios (vangoyt867@gmail.com)
 
 ---
 
@@ -988,311 +987,6 @@ Complete API reference for all endpoints including request/response formats, aut
 
 ---
 
-## Order Status Management Endpoints
-
-### GET /shop_orders
-
-**Description:** Retrieves all orders for the currently active shop. This endpoint is for shopkeepers to view orders placed on their shop. Returns order details including customer email, status, total cost, items with snapshots, and timestamps. Orders are returned in reverse chronological order (newest first).
-
-**Authentication:** Required (both access_token and shop_token cookies)
-
-**Request Parameters:** None (body not required)
-
-**Success Response (200 OK):**
-```json
-{
-  "orders": [
-    {
-      "order_id": 42,
-      "user_id": 7,
-      "shop_id": 5,
-      "user_email": "customer@example.com",
-      "status": "pending",
-      "total_cost": 15998,
-      "created_at": "2024-01-15T14:30:00",
-      "status_updated_at": "2024-01-15T14:30:00",
-      "items": [
-        {
-          "product_id": 123,
-          "product_name": "Wireless Headphones",
-          "quantity": 2,
-          "price": 7999,
-          "total": 15998
-        }
-      ],
-      "item_count": 1
-    }
-  ]
-}
-```
-
-**Field Descriptions:**
-- `orders` (array): List of orders for the current shop
-  - `order_id` (integer): Unique order identifier
-  - `user_id` (integer): ID of the customer who placed the order
-  - `shop_id` (integer): ID of the shop that received the order
-  - `user_email` (string): Email of the customer
-  - `status` (string): Current order status (pending, working, completed, cancelled)
-  - `total_cost` (integer): Total cost in cents
-  - `created_at` (datetime): When the order was placed
-  - `status_updated_at` (datetime): When the status was last changed
-  - `items` (array): Items in the order with purchase-time snapshots
-    - `product_id` (integer): ID of the product
-    - `product_name` (string): Product name at time of purchase
-    - `quantity` (integer): Quantity purchased
-    - `price` (integer): Price per unit at time of purchase (in cents)
-    - `total` (integer): Total for this item (price × quantity)
-  - `item_count` (integer): Total number of items in the order
-
-**Error Responses:**
-- **401 Unauthorized:** If not authenticated
-- **403 Forbidden:** If no shop token provided
-
-**Notes:**
-- Only returns orders for the currently selected shop (shop_id from cookie)
-- Includes product snapshots to preserve purchase details even if seller changes product info later
-- Orders are sorted by creation date (newest first)
-- Essential for shopkeepers to manage incoming orders
-
----
-
-### PUT /update_order_status
-
-**Description:** Updates the status of an order. This endpoint is for shopkeepers to change order status between "pending" and "working". Shopkeepers cannot mark orders as "completed" - only customers can do that. The system verifies that the order belongs to the shop before allowing the update.
-
-**Authentication:** Required (both access_token and shop_token cookies)
-
-**Request Body (JSON):**
-```json
-{
-  "order_id": 42,
-  "status": "working"
-}
-```
-
-**Field Descriptions:**
-- `order_id` (integer, required): ID of the order to update
-- `status` (string, required): New status - must be "pending" or "working"
-
-**Success Response (200 OK):**
-```json
-{
-  "message": "Order status updated successfully",
-  "order_id": 42,
-  "status": "working"
-}
-```
-
-**Error Responses:**
-- **400 Bad Request:** If attempting to set status to "completed" (shopkeepers not allowed)
-  ```json
-  {
-    "detail": "Shopkeepers cannot mark orders as completed"
-  }
-  ```
-- **400 Bad Request:** If invalid status transition
-  ```json
-  {
-    "detail": "Invalid status transition"
-  }
-  ```
-- **403 Forbidden:** If order does not belong to the shop
-  ```json
-  {
-    "detail": "You do not own this order"
-  }
-  ```
-- **404 Not Found:** If order does not exist
-
-**Notes:**
-- Shopkeepers can only toggle between "pending" and "working"
-- "completed" status is reserved for customer confirmation only
-- This prevents shopkeepers from marking orders complete without customer confirmation
-- Transaction rollback ensures no partial status updates on error
-
----
-
-### PUT /user_order_status
-
-**Description:** Confirms order completion. This endpoint is for customers to mark their orders as "completed" after the shopkeeper has set the status to "working". The system verifies that the order belongs to the user and that the current status is "working" before allowing the completion.
-
-**Authentication:** Required (access_token cookie)
-
-**Request Body (JSON):**
-```json
-{
-  "order_id": 42,
-  "status": "completed"
-}
-```
-
-**Field Descriptions:**
-- `order_id` (integer, required): ID of the order to update
-- `status` (string, required): New status - must be "completed"
-
-**Success Response (200 OK):**
-```json
-{
-  "message": "Order status updated successfully",
-  "order_id": 42,
-  "status": "completed"
-}
-```
-
-**Error Responses:**
-- **400 Bad Request:** If order is not in "working" status
-  ```json
-  {
-    "detail": "Order must be in 'working' status to be marked as completed. Current status: pending"
-  }
-  ```
-- **403 Forbidden:** If order does not belong to the user
-  ```json
-  {
-    "detail": "You do not own this order"
-  }
-  ```
-- **404 Not Found:** If order does not exist
-
-**Notes:**
-- Customers can only mark orders as "completed"
-- Order must be in "working" status first (shopkeeper must have started processing)
-- This ensures proper workflow: pending → working → completed
-- Transaction rollback ensures no partial status updates on error
-
----
-
-## Sales Analytics Endpoints
-
-### GET /product_sales
-
-**Description:** Retrieves sales summary for all products in the currently active shop. This endpoint provides aggregated sales data including total quantity sold, total revenue, total orders, and unique buyer count for each product. Useful for shopkeepers to track which products are selling best.
-
-**Authentication:** Required (both access_token and shop_token cookies)
-
-**Request Parameters:** None (body not required)
-
-**Success Response (200 OK):**
-```json
-{
-  "product_sales": [
-    {
-      "product_id": 123,
-      "product_name": "Wireless Headphones",
-      "total_quantity": 25,
-      "total_revenue": 199975,
-      "total_orders": 10,
-      "buyers": ["customer1@example.com", "customer2@example.com", "customer3@example.com"]
-    },
-    {
-      "product_id": 124,
-      "product_name": "USB-C Cable",
-      "total_quantity": 50,
-      "total_revenue": 99950,
-      "total_orders": 15,
-      "buyers": ["customer1@example.com", "customer4@example.com"]
-    }
-  ],
-  "total_products": 2
-}
-```
-
-**Field Descriptions:**
-- `product_sales` (array): Sales summary for each product
-  - `product_id` (integer): Product identifier
-  - `product_name` (string): Product name (from purchase snapshot)
-  - `total_quantity` (integer): Total units sold across all orders
-  - `total_revenue` (integer): Total revenue in cents
-  - `total_orders` (integer): Total number of orders containing this product
-  - `buyers` (array): List of unique customer emails who purchased this product
-- `total_products` (integer): Total number of products with sales
-
-**Error Responses:**
-- **401 Unauthorized:** If not authenticated
-- **403 Forbidden:** If no shop token provided
-
-**Notes:**
-- Uses product name snapshots from purchase time (not current product name)
-- Revenue is calculated from purchase-time prices (not current prices)
-- Buyers list includes unique customers only (duplicates removed)
-- Useful for identifying best-selling products and revenue tracking
-
----
-
-### GET /product_sales/{product_id}
-
-**Description:** Retrieves detailed sales history for a specific product. This endpoint shows every individual sale for the product including customer information (name, email, phone, address), quantity, price, total, purchase date, and order status. Essential for shopkeepers to understand who bought their products and track order status.
-
-**Authentication:** Required (both access_token and shop_token cookies)
-
-**URL Parameters:**
-- `product_id` (integer, required, path parameter): The ID of the product to get sales for
-
-**Request Body:** None
-
-**Success Response (200 OK):**
-```json
-{
-  "product_id": 123,
-  "sales": [
-    {
-      "order_id": 42,
-      "customer_name": "John Doe",
-      "customer_email": "john@example.com",
-      "customer_phone": "1234567890",
-      "customer_address": "123 Main St, City, State",
-      "quantity": 2,
-      "price": 7999,
-      "total": 15998,
-      "purchase_date": "2024-01-15T14:30:00",
-      "order_status": "completed"
-    },
-    {
-      "order_id": 45,
-      "customer_name": "Jane Smith",
-      "customer_email": "jane@example.com",
-      "customer_phone": "9876543210",
-      "customer_address": "456 Oak Ave, Town, State",
-      "quantity": 1,
-      "price": 7999,
-      "total": 7999,
-      "purchase_date": "2024-01-16T09:15:00",
-      "order_status": "working"
-    }
-  ],
-  "total_sales": 2
-}
-```
-
-**Field Descriptions:**
-- `product_id` (integer): Product identifier
-- `sales` (array): Individual sales for this product
-  - `order_id` (integer): Order identifier
-  - `customer_name` (string): Customer's full name
-  - `customer_email` (string): Customer's email address
-  - `customer_phone` (string): Customer's phone number
-  - `customer_address` (string): Customer's address
-  - `quantity` (integer): Quantity purchased
-  - `price` (integer): Price per unit at time of purchase (in cents)
-  - `total` (integer): Total cost for this sale (price × quantity)
-  - `purchase_date` (datetime): When the purchase was made
-  - `order_status` (string): Current status of the order
-- `total_sales` (integer): Total number of sales for this product
-
-**Error Responses:**
-- **401 Unauthorized:** If not authenticated
-- **403 Forbidden:** If no shop token provided
-- **404 Not Found:** If product does not exist
-
-**Notes:**
-- Shows complete customer information for each sale
-- Useful for order fulfillment and customer communication
-- Displays purchase-time prices (preserves historical pricing)
-- Includes order status to track fulfillment progress
-- All customer data is from the order (no privacy concerns for shopkeeper seeing their own customers)
-
----
-
 ## Health Check
 
 ### GET /health
@@ -1657,3 +1351,278 @@ Not currently implemented (deferred per user request). Recommended for productio
 - Always snapshot product details at purchase time
 - Test with PostgreSQL for production-level concurrency
 - SQLite is suitable for development but has locking limitations
+
+---
+
+## Order Status Management Endpoints
+
+### GET /shop_orders
+
+**Description:** Retrieves all orders for the currently selected shop. Shopkeepers can view orders placed by customers for their products. Each order includes customer information, order items, status, and timestamps. This endpoint requires both user authentication and shop authentication.
+
+**Authentication:** Required (access_token cookie + shop_access_token cookie)
+
+**Request Parameters:** None
+
+**Success Response (200 OK):**
+```json
+{
+  "orders": [
+    {
+      "order_id": 789,
+      "user_email": "customer@example.com",
+      "status": "pending",
+      "total_cost": 17997,
+      "created_at": "2024-01-20T14:30:00",
+      "status_updated_at": "2024-01-20T14:30:00",
+      "items": [
+        {
+          "product_id": 123,
+          "product_name_snapshot": "Wireless Bluetooth Headphones",
+          "quantity": 2,
+          "product_price_snapshot": 7999
+        }
+      ],
+      "shop_id": 5
+    }
+  ]
+}
+```
+
+**Field Descriptions:**
+- `orders` (array): List of orders for the shop
+  - `order_id` (integer): Unique order identifier
+  - `user_email` (string): Customer's email address
+  - `status` (string): Current status (pending, working, completed, cancelled)
+  - `total_cost` (integer): Total cost in cents
+  - `created_at` (datetime): Order creation timestamp
+  - `status_updated_at` (datetime): Last status update timestamp
+  - `items` (array): Order items with snapshot data
+  - `shop_id` (integer): Shop ID that received the order
+
+**Error Responses:**
+- **401 Unauthorized:** If not authenticated or no shop selected
+- **403 Forbidden:** If shop ownership verification fails
+
+**Notes:**
+- Only returns orders for the currently selected shop
+- Uses product snapshots to preserve purchase-time details
+- Shopkeepers can only view their own shop's orders
+
+---
+
+### PUT /update_order_status
+
+**Description:** Allows shopkeepers to update order status. Shopkeepers can toggle between "pending" and "working" statuses but cannot mark orders as "completed" (only customers can do that). This ensures customers have control over confirming order completion.
+
+**Authentication:** Required (access_token cookie + shop_access_token cookie)
+
+**Request Body (JSON):**
+```json
+{
+  "order_id": 789,
+  "status": "working"
+}
+```
+
+**Field Descriptions:**
+- `order_id` (integer, required): ID of the order to update
+- `status` (string, required): New status (must be "pending" or "working")
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "Order status updated successfully",
+  "order_id": 789,
+  "status": "working"
+}
+```
+
+**Error Responses:**
+- **400 Bad Request:** If invalid status transition
+  ```json
+  {
+    "detail": "Invalid status transition"
+  }
+  ```
+- **403 Forbidden:** If shopkeeper tries to mark as "completed"
+  ```json
+  {
+    "detail": "Shopkeepers cannot mark orders as completed"
+  }
+  ```
+- **404 Not Found:** If order doesn't exist or doesn't belong to shop
+  ```json
+  {
+    "detail": "Order not found"
+  }
+  ```
+
+**Notes:**
+- Shopkeepers can only change: pending ↔ working
+- Shopkeepers cannot mark orders as completed (customer-only operation)
+- Updates status_updated_at timestamp
+- Verifies order belongs to the current shop
+
+---
+
+### PUT /user_order_status
+
+**Description:** Allows customers to mark their orders as "completed". Customers can only change status from "working" to "completed". This ensures customers confirm when they've received their order.
+
+**Authentication:** Required (access_token cookie)
+
+**Request Body (JSON):**
+```json
+{
+  "order_id": 789,
+  "status": "completed"
+}
+```
+
+**Field Descriptions:**
+- `order_id` (integer, required): ID of the order to update
+- `status` (string, required): New status (must be "completed")
+
+**Success Response (200 OK):**
+```json
+{
+  "message": "Order status updated successfully",
+  "order_id": 789,
+  "status": "completed"
+}
+```
+
+**Error Responses:**
+- **400 Bad Request:** If order is not in "working" status
+  ```json
+  {
+    "detail": "Order must be in 'working' status to be marked as completed. Current status: pending"
+  }
+  ```
+- **403 Forbidden:** If order doesn't belong to user
+  ```json
+  {
+    "detail": "Order not found"
+  }
+  ```
+
+**Notes:**
+- Customers can only change: working → completed
+- Customers cannot set status to pending or working
+- Order must be in "working" status (shopkeeper must have started processing)
+- Verifies order belongs to the authenticated user
+
+---
+
+## Sales Analytics Endpoints
+
+### GET /product_sales
+
+**Description:** Retrieves sales analytics for all products in the current shop. Provides summary statistics including total quantity sold, total revenue, total orders, and unique buyers for each product. This helps shopkeepers understand which products are performing best.
+
+**Authentication:** Required (access_token cookie + shop_access_token cookie)
+
+**Request Parameters:** None
+
+**Success Response (200 OK):**
+```json
+{
+  "product_sales": [
+    {
+      "product_id": 123,
+      "product_name": "Wireless Bluetooth Headphones",
+      "total_quantity": 45,
+      "total_revenue": 359955,
+      "total_orders": 23,
+      "buyers": ["customer1@example.com", "customer2@example.com", "customer3@example.com"]
+    },
+    {
+      "product_id": 124,
+      "product_name": "USB-C Charging Cable",
+      "total_quantity": 120,
+      "total_revenue": 239880,
+      "total_orders": 67,
+      "buyers": ["customer1@example.com", "customer4@example.com", "customer5@example.com"]
+    }
+  ],
+  "total_products": 2
+}
+```
+
+**Field Descriptions:**
+- `product_sales` (array): Sales summary per product
+  - `product_id` (integer): Product identifier
+  - `product_name` (string): Product name (from snapshot)
+  - `total_quantity` (integer): Total units sold
+  - `total_revenue` (integer): Total revenue in cents
+  - `total_orders` (integer): Total number of orders
+  - `buyers` (array): List of unique customer emails
+- `total_products` (integer): Number of products with sales
+
+**Error Responses:**
+- **401 Unauthorized:** If not authenticated or no shop selected
+
+**Notes:**
+- Uses product snapshots for accurate historical data
+- Tracks unique buyers per product
+- Revenue calculated from snapshot prices (not current prices)
+- Only returns data for the current shop
+
+---
+
+### GET /product_sales/{product_id}
+
+**Description:** Retrieves detailed sales history for a specific product. Includes complete customer information (name, email, phone, address) for each sale. This helps shopkeepers understand their customer base and contact customers if needed.
+
+**Authentication:** Required (access_token cookie + shop_access_token cookie)
+
+**URL Parameters:**
+- `product_id` (integer, required, path parameter): ID of the product
+
+**Success Response (200 OK):**
+```json
+{
+  "product_id": 123,
+  "sales": [
+    {
+      "order_id": 789,
+      "customer_name": "John Doe",
+      "customer_email": "john.doe@example.com",
+      "customer_phone": "1234567890",
+      "customer_address": "123 Main Street, New York, NY 10001",
+      "quantity": 2,
+      "price": 7999,
+      "total": 15998,
+      "purchase_date": "2024-01-20T14:30:00",
+      "order_status": "completed"
+    }
+  ],
+  "total_sales": 1
+}
+```
+
+**Field Descriptions:**
+- `product_id` (integer): Product identifier
+- `sales` (array): Detailed sales records
+  - `order_id` (integer): Order ID
+  - `customer_name` (string): Customer's full name
+  - `customer_email` (string): Customer's email
+  - `customer_phone` (string): Customer's phone number
+  - `customer_address` (string): Customer's address
+  - `quantity` (integer): Quantity purchased
+  - `price` (integer): Price per unit in cents (snapshot)
+  - `total` (integer): Total cost for this sale
+  - `purchase_date` (datetime): Purchase timestamp
+  - `order_status` (string): Current order status
+- `total_sales` (integer): Total number of sales records
+
+**Error Responses:**
+- **401 Unauthorized:** If not authenticated or no shop selected
+- **404 Not Found:** If product doesn't exist or belongs to different shop
+
+**Notes:**
+- Provides complete customer contact information
+- Useful for customer outreach and marketing
+- Price data from snapshots (accurate historical pricing)
+- Only returns sales for products in the current shop
