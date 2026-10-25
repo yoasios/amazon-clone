@@ -1,0 +1,56 @@
+# Production Docker Compose configuration
+# PostgreSQL + FastAPI application
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: amazon_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-amazon_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - amazon_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Do not expose PostgreSQL port externally in production
+    # Remove ports section for production security
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: amazon_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-amazon_db}
+      JWT_SECRET: ${JWT_SECRET}
+      SHOP_COOKIE_SECRET: ${SHOP_COOKIE_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - amazon_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  amazon_network:
+    driver: bridge

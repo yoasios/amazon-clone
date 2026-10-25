@@ -18,7 +18,8 @@ async def update_user_order_status(
 ):
     """
     User can update their own order status.
-    - Only allowed: working -> completed (user confirms receipt)
+    - Allowed: working -> delivered (customer confirms delivery)
+    - Allowed: delivered -> completed (customer confirms receipt)
     - User cannot change to pending or working
     """
     user_id = current_user["id"]
@@ -36,21 +37,25 @@ async def update_user_order_status(
     if order.user_id != user_id:
         raise HTTPException(status_code=403, detail="This order does not belong to you")
 
-    # Only allow user to set status to "completed" if current status is "working"
-    if status_update.status != "completed":
-        raise HTTPException(
-            status_code=400,
-            detail="Users can only mark orders as completed"
-        )
+    # Validate status transitions for customers
+    allowed_transitions = {
+        "working": ["delivered"],
+        "delivered": ["completed"],
+        "pending": [],  # Cannot change from pending
+        "completed": [],  # Cannot change from completed
+        "cancelled": []  # Cannot change from cancelled
+    }
 
-    if order.status != "working":
+    if status_update.status not in allowed_transitions.get(order.status, []):
         raise HTTPException(
             status_code=400,
-            detail=f"Order must be in 'working' status to be marked as completed. Current status: {order.status}"
+            detail=f"Invalid status transition from '{order.status}' to '{status_update.status}'. "
+                   f"Customers can only change: working -> delivered -> completed. "
+                   f"Allowed transitions: {allowed_transitions.get(order.status, [])}"
         )
 
     # Update the order status
-    order.status = "completed"
+    order.status = status_update.status
     order.status_updated_at = datetime.now()
 
     await db.commit()

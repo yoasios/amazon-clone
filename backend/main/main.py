@@ -27,6 +27,7 @@ from ..routes.shop_orders import router as shop_orders_router
 from ..routes.update_order_status import router as update_order_status_router
 from ..routes.user_order_status import router as user_order_status_router
 from ..routes.product_sales import router as product_sales_router
+from ..routes.cancel_order import router as cancel_order_router
 
 app = FastAPI()
 
@@ -63,6 +64,7 @@ app.include_router(shop_orders_router)
 app.include_router(update_order_status_router)
 app.include_router(user_order_status_router)
 app.include_router(product_sales_router)
+app.include_router(cancel_order_router)
 
 # Mount frontend static files AFTER API routes (API routes take precedence)
 frontend_path = Path(__file__).parent.parent.parent / "front_end"

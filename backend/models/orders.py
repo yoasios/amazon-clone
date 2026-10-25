@@ -11,3 +11,4 @@ class Order(Base):
     status = Column(String, default="pending")  # pending, working, completed, cancelled
     status_updated_at = Column(DateTime, default=datetime.now)  # When status last changed
     created_at = Column(DateTime, default=datetime.now)
+    cancellation_fee = Column(Integer, default=0)  # Refund cancellation fee in cents

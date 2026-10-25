@@ -29,6 +29,7 @@ Complete API reference for all endpoints including request/response formats, aut
    - GET /shop_orders
    - PUT /update_order_status
    - PUT /user_order_status
+   - POST /cancel_order/{order_id}
 7. [Sales Analytics Endpoints](#sales-analytics-endpoints)
    - GET /product_sales
    - GET /product_sales/{product_id}

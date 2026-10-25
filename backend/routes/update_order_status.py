@@ -45,10 +45,11 @@ async def update_order_status(
 
     # Validate status transitions for shopkeepers (this route is for shopkeepers only)
     # Shopkeepers can ONLY change: pending <-> working
-    # Shopkeepers CANNOT mark as completed (user-only operation)
+    # Shopkeepers CANNOT mark as delivered or completed (customer-only operations)
     allowed_transitions = {
         "pending": ["working"],
         "working": ["pending"],
+        "delivered": [],  # Cannot change from delivered
         "completed": [],  # Cannot change from completed
         "cancelled": []  # Cannot change from cancelled
     }
@@ -59,6 +60,13 @@ async def update_order_status(
             detail=f"Invalid status transition from '{order.status}' to '{status_update.status}'. "
                    f"Shopkeepers can only toggle between pending and working. "
                    f"Allowed transitions: {allowed_transitions.get(order.status, [])}"
+        )
+
+    # Shopkeepers can NEVER mark orders as delivered or completed (customer-only operations)
+    if status_update.status in ["delivered", "completed"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Shopkeepers cannot mark orders as delivered or completed. Only customers can confirm delivery and completion."
         )
 
     # Shopkeepers can NEVER mark orders as completed (use user_order_status endpoint for that)

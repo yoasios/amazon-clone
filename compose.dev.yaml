@@ -1,0 +1,32 @@
+# Development Docker Compose configuration
+# Overrides production compose.yaml for development
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: amazon_app_dev
+    restart: "no"
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-amazon_db}
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_key_change_in_production}
+      SHOP_COOKIE_SECRET: ${SHOP_COOKIE_SECRET:-dev_shop_secret_change_in_production}
+    volumes:
+      # Mount source code for hot reload (requires uvicorn --reload)
+      - ./backend:/app/backend
+      - ./front_end:/app/front_end
+    command: ["uvicorn", "backend.main.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - amazon_network
+
+  postgres:
+    ports:
+      # Expose PostgreSQL for local development tools
+      - "5432:5432"

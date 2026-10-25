@@ -59,6 +59,7 @@ const Api = {
   shopOrders: () => request("GET", "/shop_orders"),
   updateOrderStatus: (b) => request("PUT", "/update_order_status", b),
   userOrderStatus: (b) => request("PUT", "/user_order_status", b),
+  cancelOrder: (id) => request("POST", "/cancel_order/" + encodeURIComponent(id)),
   productSales: () => request("GET", "/product_sales"),
   productSalesDetail: (id) => request("GET", "/product_sales/" + encodeURIComponent(id)),
   health: () => request("GET", "/health"),

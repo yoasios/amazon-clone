@@ -10,6 +10,7 @@
         salesBox = el("section", { "aria-label": "Product sales" }, el("div", { class: "seller-section" }));
   let active = null;
   let currentTab = "products"; // "products", "orders", or "sales"
+  let tabsElement = null; // Store reference to tabs element
 
   const toCents = (v) => {
     const n = parseFloat(v);
@@ -55,17 +56,40 @@
 
   function switchTab(tab) {
     currentTab = tab;
-    drawTabs();
+    updateTabs();
     loadCurrentTab();
   }
 
+  function updateTabs() {
+    if (!tabsElement) return;
+    const buttons = tabsElement.querySelectorAll('.tab');
+    buttons.forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.textContent.includes('Products') && currentTab === 'products') {
+        btn.classList.add('active');
+      } else if (btn.textContent.includes('Orders') && currentTab === 'orders') {
+        btn.classList.add('active');
+      } else if (btn.textContent.includes('Sales') && currentTab === 'sales') {
+        btn.classList.add('active');
+      }
+    });
+  }
+
   function drawTabs() {
-    const tabs = el("div", { class: "tabs" },
-      el("button", { class: "tab" + (currentTab === "products" ? " active" : ""), type: "button", onclick: () => switchTab("products") }, "📦 Products"),
-      el("button", { class: "tab" + (currentTab === "orders" ? " active" : ""), type: "button", onclick: () => switchTab("orders") }, "📋 Orders"),
-      el("button", { class: "tab" + (currentTab === "sales" ? " active" : ""), type: "button", onclick: () => switchTab("sales") }, "💰 Sales")
+    if (tabsElement) return tabsElement; // Return existing if already created
+    tabsElement = el("div", { class: "tabs" },
+      el("button", { class: "tab" + (currentTab === "products" ? " active" : ""), type: "button" }, "📦 Products"),
+      el("button", { class: "tab" + (currentTab === "orders" ? " active" : ""), type: "button" }, "📋 Orders"),
+      el("button", { class: "tab" + (currentTab === "sales" ? " active" : ""), type: "button" }, "💰 Sales")
     );
-    return tabs;
+    
+    // Add event listeners separately to ensure they work
+    const buttons = tabsElement.querySelectorAll('.tab');
+    buttons[0].addEventListener('click', () => switchTab("products"));
+    buttons[1].addEventListener('click', () => switchTab("orders"));
+    buttons[2].addEventListener('click', () => switchTab("sales"));
+    
+    return tabsElement;
   }
 
   async function loadCurrentTab() {
@@ -235,23 +259,27 @@
 
   // ---------- orders ----------
   function statusBadge(status) {
-    const colors = { pending: "warn", working: "info", completed: "ok", cancelled: "error" };
+    const colors = { pending: "warn", working: "info", delivered: "info", completed: "ok", cancelled: "error" };
     return el("span", { class: "badge " + (colors[status] || "neutral") }, status.toUpperCase());
   }
 
   function orderCard(o) {
     const items = Array.isArray(o.items) ? o.items : [];
     const itemsList = el("ul", { class: "items" }, items.map(i =>
-      el("li", {}, el("strong", {}, i.product_name), " × " + i.quantity + " = " + money(i.price * i.quantity))
+      el("li", {}, 
+        el("span", { class: "item-name" }, i.product_name),
+        el("span", { class: "item-qty" }, "× " + i.quantity),
+        el("span", { class: "item-total" }, money(i.price * i.quantity))
+      )
     ));
     
     const statusSelect = el("select", { class: "status-select" },
-      el("option", { value: "pending" }, "Pending"),
-      el("option", { value: "working" }, "Working")
+      el("option", { value: "pending" }, "⏳ Pending"),
+      el("option", { value: "working" }, "🔧 Working")
     );
     statusSelect.value = o.status;
     
-    const updateBtn = el("button", { class: "btn sm", type: "button" }, "Update status");
+    const updateBtn = el("button", { class: "btn btn-primary", type: "button" }, "Update Status");
     updateBtn.addEventListener("click", async () => {
       setBusy(updateBtn, true, "Updating…");
       try {
@@ -261,16 +289,34 @@
       } catch (e) { toast(e.message, "error"); } finally { setBusy(updateBtn, false); }
     });
 
-    return el("article", { class: "ordercard" },
+    return el("article", { class: "ordercard order-shop" },
       el("div", { class: "order-header" },
-        el("h3", {}, "Order #" + o.order_id),
+        el("div", { class: "order-id-section" },
+          el("span", { class: "order-icon" }, "📦"),
+          el("h3", {}, "Order #" + o.order_id)
+        ),
         statusBadge(o.status),
-        el("span", { class: "order-date" }, fmtDate(o.created_at))
+        el("span", { class: "order-date" }, "📅 " + fmtDate(o.created_at))
       ),
-      el("p", { class: "order-customer" }, "Customer: " + o.user_email),
-      itemsList,
-      el("p", { class: "order-total" }, "Total: " + money(o.total_cost)),
-      el("div", { class: "order-actions" }, statusSelect, updateBtn)
+      el("div", { class: "order-customer-section" },
+        el("h4", {}, "👤 Customer Information"),
+        el("div", { class: "customer-details" },
+          el("span", { class: "customer-detail" }, "📧 " + o.user_email)
+        )
+      ),
+      el("div", { class: "order-items-section" },
+        el("h4", {}, "🛍️ Items in this order"),
+        itemsList
+      ),
+      el("div", { class: "order-footer" },
+        el("span", { class: "order-total-label" }, "Order total"),
+        el("span", { class: "order-total-amount" }, money(o.total_cost))
+      ),
+      el("div", { class: "order-actions" },
+        el("span", { class: "action-hint" }, "Change status to update customer"),
+        statusSelect,
+        updateBtn
+      )
     );
   }
 
@@ -279,6 +325,7 @@
     const shop = active;
     ordersBox.firstElementChild.replaceChildren(
       el("h2", {}, "📋 " + shop.shop_name + " - Orders"),
+      el("p", { class: "page-subtitle" }, "Manage orders from customers who purchased your products"),
       el("div", { class: "state" }, "Loading orders…")
     );
     try {
@@ -287,6 +334,7 @@
       const orders = Array.isArray(d.orders) ? d.orders : [];
       ordersBox.firstElementChild.replaceChildren(
         el("h2", {}, "📋 " + shop.shop_name + " - Orders"),
+        el("p", { class: "page-subtitle" }, "Manage orders from customers who purchased your products"),
         orders.length
           ? el("div", { class: "orders" }, orders.map(orderCard))
           : el("div", { class: "empty-state" },
@@ -295,7 +343,7 @@
               el("p", { class: "empty-state-text" }, "Orders will appear here when customers purchase your products.")
             )
       );
-    } catch (e) { ordersBox.firstElementChild.replaceChildren(el("h2", {}, "📋 " + shop.shop_name + " - Orders"), errorState(e, loadOrders)); }
+    } catch (e) { ordersBox.firstElementChild.replaceChildren(el("h2", {}, "📋 " + shop.shop_name + " - Orders"), el("p", { class: "page-subtitle" }, "Manage orders from customers who purchased your products"), errorState(e, loadOrders)); }
   }
 
   // ---------- sales ----------
@@ -411,7 +459,7 @@
     } catch (e) { salesBox.firstElementChild.replaceChildren(el("h2", {}, "💰 " + shop.shop_name + " - Sales Analytics"), errorState(e, loadSales)); }
   }
 
-  app.replaceChildren(shopsBox, createShopForm(), drawTabs(), manage, ordersBox, salesBox);
+  app.replaceChildren(shopsBox, createShopForm(), manage, ordersBox, salesBox, drawTabs());
   
   // Initialize display states
   ordersBox.style.display = "none";

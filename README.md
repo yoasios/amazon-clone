@@ -37,10 +37,22 @@ A complete full-stack e-commerce platform with FastAPI backend and browser front
   - Product snapshots preserve purchase details
   - Transaction rollback on errors
   - **Order Status Management**
-    - Status flow: pending → working → completed
+    - Status flow: pending → working → delivered → completed
     - Shopkeepers can update pending/working status
-    - Customers can mark orders as completed
+    - Customers can mark orders as delivered and completed
+    - Two-step completion: Shopkeeper marks as working → Customer marks as delivered → Customer confirms completion
     - Timestamp tracking for status changes
+
+- **Order Cancellation & Refund**
+    - Cancellation allowed for pending and working orders
+    - Cancellation blocked after delivered status
+    - Automatic stock restoration on cancellation
+    - Refund policy based on time elapsed:
+      - Within 5 minutes: 0% fee
+      - Pending status: 0% fee
+      - Working status: 10-20% fee (based on time)
+      - Delivered/Completed: Cancellation blocked
+    - Atomic stock restoration with transaction rollback
 
 - **Search Functionality**
   - Search by shop ID
@@ -167,7 +179,54 @@ front_end/
 └── shop.html               # Shop page
 ```
 
-## Setup
+## Docker Deployment
+
+### Quick Start with Docker
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your configuration
+# Set POSTGRES_PASSWORD, JWT_SECRET, SHOP_COOKIE_SECRET
+
+# Build and start with Docker Compose
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop the stack
+docker compose down
+```
+
+### Development Mode with Docker
+
+```bash
+# Start with hot reload
+docker compose -f compose.yaml -f compose.dev.yaml up
+```
+
+### Docker Operations
+
+See [docs/docker.md](docs/docker.md) for comprehensive Docker operations guide including:
+- Building images
+- Running containers
+- Health checks
+- Database operations
+- Backup and restore
+- Troubleshooting
+
+### Architecture
+
+- **Single-container FastAPI application** serving both API and frontend
+- **PostgreSQL 16** database (production) with persistent volumes
+- **Multi-stage Docker build** for optimized image size
+- **Non-root user execution** for security
+- **Health checks** for both app and database
+- **Separate development and production configurations**
+
+## Setup (Without Docker)
 
 1. **Clone the repository**
    ```bash
@@ -583,21 +642,48 @@ Request body:
 ```json
 {
   "order_id": 1,
-  "status": "completed"
+  "status": "delivered"
 }
 ```
 
 Allowed status transitions for customers:
-- `working` → `completed`
+- `working` → `delivered` (customer confirms delivery)
+- `delivered` → `completed` (customer confirms receipt)
 
-**Note:** Customers can only mark orders as completed when the shop has set status to `working`.
+**Note:** Customers cannot mark orders as completed unless they are first marked as delivered by the customer (after shopkeeper sets to working).
 
 Response:
 ```json
 {
-  "message": "Order status updated successfully",
+  "message": "Order marked as delivered",
   "order_id": 1,
-  "new_status": "completed"
+  "status": "delivered"
+}
+```
+
+### Cancel Order
+**POST** `/cancel_order/{order_id}`
+
+Requires authentication (access_token cookie). Only order owner can cancel.
+
+Cancellation allowed for:
+- Pending orders (0% fee or based on time)
+- Working orders (10-20% fee based on time elapsed)
+
+Cancellation blocked for:
+- Delivered orders
+- Completed orders
+
+Response:
+```json
+{
+  "message": "Order cancelled successfully",
+  "order_id": 1,
+  "refund_amount": 90,
+  "cancellation_fee": 10,
+  "total_cost": 100,
+  "time_elapsed_minutes": 15,
+  "order_status_at_cancellation": "working"
 }
 ```
 
@@ -699,6 +785,8 @@ python load_test.py
 - Global search functionality
 - Data integrity checks
 - Order status management (shopkeeper and customer)
+- **Order cancellation and refund logic**
+- **Delivered status workflow**
 - Cross-user access control
 - Cross-shop access control
 - Order status sequence verification
@@ -711,12 +799,14 @@ python load_test.py
 - Transaction rollback testing
 - Session persistence testing
 - Duplicate prevention testing
+- **Security tests for cancellation and completion**
 
 **Load test results (PostgreSQL):**
 - 100% success rate on all core operations
-- 50+ requests per second
+- 59+ requests per second
 - Zero database locking errors
 - Complete security enforcement verified
+- All refund/cancellation logic validated
 
 ## Security
 
